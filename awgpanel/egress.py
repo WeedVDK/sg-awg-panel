@@ -455,6 +455,13 @@ def _delete_policy_rules(profile_ids: set[int]) -> None:
     ip = shutil.which("ip")
     if not ip:
         return
+    # Патч каскада: удаляем per-client source-based правила (диапазон 200-299).
+    for priority in range(200, 300):
+        while _run([ip, "rule", "del", "priority", str(priority)]).returncode == 0:
+            pass
+    # Патч каскада: удаляем правило для dnsmasq (priority 50).
+    while _run([ip, "rule", "del", "priority", "50"]).returncode == 0:
+        pass
     for outbound_id in sorted(profile_ids):
         priority = str(rule_priority_for(outbound_id))
         table = str(traffic_table_for(outbound_id))
@@ -724,6 +731,102 @@ def _apply_egress_runtime_unlocked() -> dict[str, object]:
                     )
                 )
 
+        # === Патч каскада: source-based routing per-client ===
+        # Добавляем ip rule from <client_ip> lookup <table> как независимый слой.
+        # Даже если nft-маркировка потеряется при пересборке панелью, клиент
+        # останется в каскаде за счёт этого правила.
+        client_outbound: dict[str, int] = {}
+        for client in clients:
+            mode = normalize_egress_mode(client["egress_mode"] or AWG_GATEWAY)
+            if mode == "outbound" and client.get("outbound_id") is not None:
+                client_outbound[str(client["address"])] = int(client["outbound_id"])
+        for index, (address, _mark, _iface) in enumerate(marked):
+            outbound_id = client_outbound.get(address)
+            if outbound_id is None:
+                continue
+            priority = 200 + index
+            table = str(traffic_table_for(outbound_id))
+            while _run([ip, "rule", "del", "priority", str(priority)]).returncode == 0:
+                pass
+            _run(
+                [
+                    ip,
+                    "rule",
+                    "add",
+                    "priority",
+                    str(priority),
+                    "from",
+                    f"{address}/32",
+                    "lookup",
+                    table,
+                ],
+                check=True,
+            )
+
+        # === Патч каскада: вывод dnsmasq из-под source-based routing ===
+        # dnsmasq на server_address отвечает на DNS-запросы клиентов. Если его
+        # трафик попадёт в policy-table каскада, ответы не смогут вернуться.
+        server_address = str(
+            next(ipaddress.ip_network(str(settings["server_network"]), strict=True).hosts())
+        )
+        while _run([ip, "rule", "del", "priority", "50"]).returncode == 0:
+            pass
+        _run(
+            [
+                ip,
+                "rule",
+                "add",
+                "priority",
+                "50",
+                "from",
+                server_address,
+                "lookup",
+                "main",
+            ],
+            check=True,
+        )
+
+        # === Патч каскада: разрешение DNS в INPUT ===
+        # После redirect/dnat DNS-пакеты становятся локальными (INPUT).
+        # UFW с policy DROP их блокирует, если нет явного ACCEPT.
+        iptables = shutil.which("iptables")
+        if iptables:
+            inbound_iface = str(settings["interface_name"])
+            for proto in ("udp", "tcp"):
+                check = _run(
+                    [
+                        iptables,
+                        "-C",
+                        "INPUT",
+                        "-i",
+                        inbound_iface,
+                        "-p",
+                        proto,
+                        "--dport",
+                        "53",
+                        "-j",
+                        "ACCEPT",
+                    ]
+                )
+                if check.returncode != 0:
+                    _run(
+                        [
+                            iptables,
+                            "-I",
+                            "INPUT",
+                            "1",
+                            "-i",
+                            inbound_iface,
+                            "-p",
+                            proto,
+                            "--dport",
+                            "53",
+                            "-j",
+                            "ACCEPT",
+                        ],
+                        check=True,
+                    )
+
         policy_rules = compile_rules()
         for rule in policy_rules:
             if rule.list_kind and not (rule.list_items or rule.inline_domains or rule.inline_cidrs):
@@ -752,6 +855,7 @@ def _apply_egress_runtime_unlocked() -> dict[str, object]:
             policy_classification=policy_classification,
             policy_guards=policy_guards,
             dns_redirect=dns_mode == "redirect",
+            dns_server_address=server_address,
             dns_block_dot=bool(dns_settings["block_dot"]) and dns_mode != "off",
             **nft_options(protection_settings),
         )

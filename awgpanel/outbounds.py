@@ -284,6 +284,7 @@ def render_nftables_script(
     policy_classification: list[str] | tuple[str, ...] = (),
     policy_guards: list[str] | tuple[str, ...] = (),
     dns_redirect: bool = False,
+    dns_server_address: str | None = None,
     dns_block_dot: bool = False,
     block_smtp: bool = False,
     block_private_networks: bool = False,
@@ -405,12 +406,13 @@ def render_nftables_script(
     lines.extend(["  }"])
 
     if dns_redirect:
+        dns_target = dns_server_address or str(next(network.hosts()))
         lines.extend(
             [
                 "  chain dns_redirect {",
                 "    type nat hook prerouting priority dstnat; policy accept;",
-                f'    iifname "{inbound_interface}" udp dport 53 redirect to :53',
-                f'    iifname "{inbound_interface}" tcp dport 53 redirect to :53',
+                f'    iifname "{inbound_interface}" udp dport 53 dnat ip to {dns_target}:53',
+                f'    iifname "{inbound_interface}" tcp dport 53 dnat ip to {dns_target}:53',
                 "  }",
             ]
         )
