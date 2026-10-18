@@ -738,8 +738,10 @@ def _apply_egress_runtime_unlocked() -> dict[str, object]:
         client_outbound: dict[str, int] = {}
         for client in clients:
             mode = normalize_egress_mode(client["egress_mode"] or AWG_GATEWAY)
-            if mode == "outbound" and client.get("outbound_id") is not None:
-                client_outbound[str(client["address"])] = int(client["outbound_id"])
+            if mode == "outbound":
+                oid = client["outbound_id"]
+                if oid is not None:
+                    client_outbound[str(client["address"])] = int(oid)
         for index, (address, _mark, _iface) in enumerate(marked):
             outbound_id = client_outbound.get(address)
             if outbound_id is None:
@@ -748,6 +750,7 @@ def _apply_egress_runtime_unlocked() -> dict[str, object]:
             table = str(traffic_table_for(outbound_id))
             while _run([ip, "rule", "del", "priority", str(priority)]).returncode == 0:
                 pass
+            ip_only = str(address).split("/")[0]
             _run(
                 [
                     ip,
@@ -756,7 +759,7 @@ def _apply_egress_runtime_unlocked() -> dict[str, object]:
                     "priority",
                     str(priority),
                     "from",
-                    f"{address}/32",
+                    f"{ip_only}/32",
                     "lookup",
                     table,
                 ],
