@@ -1591,6 +1591,7 @@ def add_awg_client(
             raise
         _write_server_config()
         _reload_if_active()
+        _reload_egress_if_available()
         return find_awg_client(client_id)
     except Exception:
         _restore_backup(backup)
