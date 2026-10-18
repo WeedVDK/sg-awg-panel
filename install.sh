@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 RELEASE_VERSION="v0.7.0-RC6"
-REPOSITORY="DedaYosya/sg-awg-panel"
+REPOSITORY="WeedVDK/sg-awg-panel"
 PASSWORD_MIN_LENGTH=8
 PUBLIC_PORT_DEFAULT=62443
 LOCAL_SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

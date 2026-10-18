@@ -183,7 +183,7 @@ sudo sg-awg-panel verify-backup
 На чистой Ubuntu 22.04/24.04:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DedaYosya/sg-awg-panel/main/install.sh -o /tmp/install-sg-awg-panel.sh
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/install.sh -o /tmp/install-sg-awg-panel.sh
 sudo bash /tmp/install-sg-awg-panel.sh
 ```
 
@@ -295,7 +295,7 @@ sudo sg-awg-panel uninstall
 Или напрямую из GitHub:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DedaYosya/sg-awg-panel/main/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/uninstall.sh | sudo bash
 ```
 
 Подтверждение:
