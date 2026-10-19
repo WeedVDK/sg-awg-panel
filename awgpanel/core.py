@@ -3319,7 +3319,7 @@ UPDATE_STATUS_PATH = Path(
 UPDATE_LOG_PATH = Path(
     os.environ.get("AWGPANEL_UPDATE_LOG", "/var/www/sg-awg-update/update.log")
 )
-UPDATE_REPOSITORY = "s-gor/sg-awg-panel"
+UPDATE_REPOSITORY = "WeedVDK/sg-awg-panel"
 
 _BACKUP_CALENDARS = {
     "hourly": "hourly",
