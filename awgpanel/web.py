@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import hashlib
 import json
@@ -11,6 +10,7 @@ import tarfile
 import html as html_module
 import threading
 import time
+from ua_extract import DeviceDetector
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
@@ -1419,6 +1419,13 @@ def create_app() -> Flask:
             flash(str(exc), "error")
         return redirect(url_for("client_access", client_id=client_id))
 
+    def _conf_to_vpn_uri(config_text: str) -> str:
+        """Кодирует .conf AmneziaWG в vpn:// URI для AmneziaVPN (Base64URL, без паддинга)."""
+        import base64
+        raw = config_text.encode("utf-8")
+        b64 = base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+        return f"vpn://{b64}"
+
     @app.get("/a/<token>")
     def public_client_config(token: str):
         panel = get_panel_settings()
@@ -1430,9 +1437,63 @@ def create_app() -> Flask:
             record_client_access(int(client["id"]))
         except AWGPanelError:
             abort(404)
+
+        lifecycle = client_lifecycle(dict(client))
+        vpn_uri = _conf_to_vpn_uri(config_text)
+        vpn_qr_b64 = ""
+        try:
+            import base64
+            _qr_resp = _qr_svg_response(vpn_uri)
+            vpn_qr_b64 = base64.b64encode(_qr_resp.get_data()).decode("ascii")
+        except Exception:
+            pass
+
+        # --- Определение устройства по User-Agent ---
+        ua_string = request.headers.get("User-Agent", "")
+        device = {"os_name": "", "model": "", "download_url": "", "download_text": "", "hint": ""}
+        if ua_string:
+            try:
+                detector = DeviceDetector(ua_string).parse()
+                os_name = detector.os_name() or ""
+                device_model = detector.device_model() or ""
+
+                if not os_name and "Android" in ua_string:
+                    os_name = "Android"
+
+                device["os_name"] = os_name
+                device["model"] = device_model
+
+                if os_name == "iOS":
+                    device["download_text"] = "Скачать AmneziaVPN (iOS)"
+                    device["download_url"] = "https://apps.apple.com/app/amneziavpn/id1600529900"
+                    device["hint"] = ("Если приложение недоступно в вашем регионе App Store, "
+                                      "смените регион аккаунта или используйте DefaultVPN.")
+                elif os_name == "Android":
+                    device["download_text"] = "Скачать AmneziaVPN (Android)"
+                    device["download_url"] = "https://play.google.com/store/apps/details?id=org.amnezia.vpn"
+                    device["hint"] = ("Если Google Play недоступен, скачайте APK с "
+                                      "github.com/amnezia-vpn/amnezia-client/releases/latest.")
+                elif os_name == "Windows":
+                    device["download_text"] = "Скачать AmneziaVPN (Windows)"
+                    device["download_url"] = "https://github.com/amnezia-vpn/amnezia-client/releases/latest"
+                elif os_name in ("Mac", "macOS"):
+                    device["download_text"] = "Скачать AmneziaVPN (macOS)"
+                    device["download_url"] = "https://github.com/amnezia-vpn/amnezia-client/releases/latest"
+                    device["hint"] = "Требуется macOS 14.0 или новее."
+                elif os_name == "Linux":
+                    device["download_text"] = "Скачать AmneziaVPN (Linux)"
+                    device["download_url"] = "https://github.com/amnezia-vpn/amnezia-client/releases/latest"
+            except Exception:
+                pass
+        # --- Конец определения устройства ---
+
         response = Response(render_template(
             "public_client_config.html", client=dict(client), config_text=config_text,
             token=token, profile_title=str(panel["access_profile_title"] or "SG-AWG"),
+            device=device,
+            lifecycle=lifecycle,
+            vpn_uri=vpn_uri,
+            vpn_qr_b64=vpn_qr_b64,
         ), mimetype="text/html; charset=utf-8")
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Robots-Tag"] = "noindex, nofollow"

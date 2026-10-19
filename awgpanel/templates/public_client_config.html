@@ -15,12 +15,27 @@
 <body class="public-config-body">
   <main class="public-config-shell">
     <section class="public-config-card">
-      <div class="public-config-brand"><strong>SG-AWG-Panel</strong><small>Конфигурация AmneziaWG</small></div>
+      <div class="public-config-brand"><strong>SG-AWG-Panel</strong><small>{% if lifecycle and lifecycle.expires_at_iso %}До {{ lifecycle.expires_at_iso[:10] }} · {{ lifecycle.expires_at_text }}{% else %}Бессрочно{% endif %}</small></div>
       <header>
-        <p class="eyebrow">УСТРОЙСТВО</p>
+        <p class="eyebrow">Имя профиля</p>
         <h1>{{ client.name }}</h1>
-        <p>Выберите один способ. Файл и скопированный текст содержат одну и ту же конфигурацию.</p>
+        <p>Выберите один способ. Файл и скопированный текст содержат одну и ту же конфигурацию.</p>     
       </header>
+      {% if device and device.download_url %}
+      <div style="margin: 16px 0 8px;">
+        <p class="eyebrow">Шаг 1. Установите клиент для вашего устройства</p>
+      </div>
+      <div style="margin-bottom: 24px;">
+        <p>
+          Определена платформа: <strong>{{ device.os_name }}</strong>{% if device.model %} (модель: <strong>{{ device.model }}</strong>){% endif %}.<br>
+          <a class="button primary wide" href="{{ device.download_url }}" target="_blank" rel="noopener noreferrer" style="margin-top: 12px; display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box;">{{ device.download_text }}</a>
+          {% if device.hint %}<br><small style="display: block; margin-top: 8px;">{{ device.hint }}</small>{% endif %}
+        </p>
+      </div>
+      {% endif %}
+<div style="margin: 16px 0 8px;">
+        <p class="eyebrow">{% if device and device.download_url %}Шаг 2. {% endif %}Импорт конфигурации</p>
+      </div>
       <div class="public-config-actions public-config-actions-three">
         <a class="button primary wide" href="{{ url_for('public_client_download', token=token) }}">Скачать .conf</a>
         <button class="button secondary wide" type="button" data-copy-public-config>Копировать конфигурацию</button>
@@ -30,6 +45,26 @@
         <summary>Показать QR-код для AmneziaWG</summary>
         <div class="client-qr-frame"><img src="{{ url_for('public_client_qr', token=token) }}" alt="QR-код конфигурации {{ client.name }}"></div>
       </details>
+      <details class="public-qr-details">
+        <summary>Показать ключ vpn:// для AmneziaVPN</summary>
+        <div class="ui-info-note" style="margin-bottom: 12px;">
+          <span>i</span>
+          <p>Скопируйте ключ ниже и вставьте в AmneziaVPN (<strong>+</strong> → «Вставить»).</p>
+        </div>
+        <textarea id="public-vpn-uri" class="config-box" rows="6" readonly>{{ vpn_uri }}</textarea>
+        <div class="public-config-actions" style="margin-top: 8px;">
+          <button class="button secondary wide" type="button" data-copy-vpn-uri>Копировать vpn://</button>
+        </div>
+        {% if vpn_qr_b64 %}
+        <details style="margin-top: 12px;">
+          <summary>Показать QR-код vpn:// для AmneziaVPN</summary>
+          <div class="client-qr-frame">
+            <img src="data:image/svg+xml;base64,{{ vpn_qr_b64 }}" alt="QR vpn://">
+          </div>
+        </details>
+        {% endif %}
+      </details>
+
       <div class="ui-info-note"><span>i</span><p><strong>Импорт в AmneziaWG:</strong> скачайте файл, вставьте текст или отсканируйте QR-код. Имя профиля: <strong>{{ client.name }}</strong>.</p></div>
       <details class="public-config-details">
         <summary>Показать полный текст</summary>
@@ -42,6 +77,17 @@
 (() => {
   const value = {{ config_text|tojson }};
   const button = document.querySelector('[data-copy-public-config]');
+  const vpnBtn = document.querySelector('[data-copy-vpn-uri]');
+  const vpnArea = document.getElementById('public-vpn-uri');
+  if (vpnBtn && vpnArea) {
+    vpnBtn.addEventListener('click', async () => {
+      try {
+        if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(vpnArea.value);
+        else { vpnArea.focus(); vpnArea.select(); document.execCommand('copy'); }
+        vpnBtn.textContent = 'Скопировано';
+      } catch (e) { vpnArea.focus(); vpnArea.select(); vpnBtn.textContent = 'Нажмите Ctrl+C'; }
+    });
+  }
   button.addEventListener('click', async () => {
     try {
       if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(value);
