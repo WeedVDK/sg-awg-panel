@@ -422,6 +422,48 @@ def command_update(_args: argparse.Namespace) -> int:
     return 0
 
 
+def command_myfakesite(_args: argparse.Namespace) -> int:
+    print(f"\n{C.bold}--- Установка защиты MyFakeSite (Anti-Probing) ---{C.reset}")
+    
+    domain_input = input("У вас есть домен, привязанный к этому серверу? (y/n): ").strip().lower()
+    domain = ""
+    
+    if domain_input in ("y", "yes", "д", "да"):
+        domain = input("Введите домен (например, vpn.example.com): ").strip()
+        if not domain:
+            print("Домен не указан. Отмена.")
+            return 1
+        cert_path = Path(f"/etc/letsencrypt/live/{domain}/fullchain.pem")
+        if not cert_path.is_file():
+            raise RuntimeError(f"Сертификат Let's Encrypt для {domain} не найден. Сначала выпустите его (certbot).")
+        print(f"Используем домен: {domain}")
+    else:
+        print("Защита будет установлена без домена (с самоподписанным сертификатом).\n")
+
+    script = PROJECT_DIR / "deploy" / "myfakesite" / "install.sh"
+    if not script.is_file():
+        raise RuntimeError(f"Не найден скрипт установки MyFakeSite: {script}")
+
+    print("Запуск установки (это может занять пару минут)...")
+    cmd = ["bash", str(script)]
+    if domain:
+        cmd.append(domain)
+
+    # Даем 10 минут на скачивание Docker-образов и запуск
+    result = _run(*cmd, timeout=600)
+    
+    sys.stdout.write(result.stdout)
+    if result.stderr:
+        sys.stderr.write(result.stderr)
+
+    if result.returncode == 0:
+        print(f"\n{C.green}OK{C.reset} MyFakeSite успешно установлен!")
+        print("Сканеры теперь будут видеть фейковое облако MySphere.")
+        return 0
+    else:
+        raise RuntimeError(f"Ошибка при установке MyFakeSite (код выхода {result.returncode})")
+
+
 def command_uninstall(_args: argparse.Namespace) -> int:
     script = PROJECT_DIR / "uninstall.sh"
     if not script.is_file():
@@ -484,6 +526,7 @@ def _menu_items() -> list[tuple[str, str, Callable[[argparse.Namespace], int], s
         ("12", "Переименовать сервер", command_server_name, "normal"),
         ("13", "Проверить и установить обновление", command_update, "warning"),
         ("14", "Полностью удалить SG-AWG-Panel", command_uninstall, "danger"),
+        ("15", "Установить защиту MyFakeSite (Anti-Probing)", command_myfakesite, "normal"),
     ]
 
 
@@ -544,6 +587,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("cluster", help="проверить Cluster и SG-Node")
     sub.add_parser("cascade", help="проверить Cascade")
     sub.add_parser("update", help="проверить и запустить обновление")
+    sub.add_parser("myfakesite", help="установить защиту MyFakeSite (Anti-Probing)")
     sub.add_parser("uninstall", help="полностью удалить SG-AWG-Panel")
     rename = sub.add_parser("server-name", help="изменить имя сервера")
     rename.add_argument("name", nargs="?")
@@ -571,6 +615,7 @@ def main() -> int:
         "cluster": command_cluster,
         "cascade": command_cascade,
         "update": command_update,
+        "myfakesite": command_myfakesite,
         "uninstall": command_uninstall,
         "server-name": command_server_name,
     }
