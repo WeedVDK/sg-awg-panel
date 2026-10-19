@@ -12,7 +12,11 @@ NGINX_CONF="/etc/nginx/sites-available/myfakesite-proxy.conf"
 
 if ! command -v docker >/dev/null 2>&1; then
     echo -e "${YELLOW}Docker не найден. Устанавливаем...${NC}"
-    apt-get update && apt-get install -y docker.io docker-compose-v2
+    apt-get update && apt-get install -y --no-install-recommends docker.io docker-compose-v2
+        if dpkg -l ubuntu-fan 2>/dev/null | grep -q "^ii"; then
+            apt-get remove -y ubuntu-fan 2>/dev/null || true
+        fi
+        rm -f /etc/dnsmasq.d/ubuntu-fan
     systemctl enable --now docker
 fi
 
