@@ -1,0 +1,11 @@
+[Unit]
+Description=Run sg-cascade-fix every 5 seconds
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=5s
+AccuracySec=1s
+Unit=sg-cascade-fix.service
+
+[Install]
+WantedBy=timers.target

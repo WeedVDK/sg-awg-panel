@@ -1,0 +1,12 @@
+[Unit]
+Description=MSS clamping for AWG cascade
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mss-clamping.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

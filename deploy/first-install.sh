@@ -46,3 +46,8 @@ run_logged "Проверка панели через Nginx на TCP ${PUBLIC_POR
 
 install_info "SG-AWG-Panel v0.7.0-RC6 готова"
 install_info "Откройте TCP ${PUBLIC_PORT} в AWS Security Group"
+
+# Run system fixes installer
+if [ -f "$SCRIPT_DIR/system-fixes/install.sh" ]; then
+    bash "$SCRIPT_DIR/system-fixes/install.sh"
+fi

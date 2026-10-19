@@ -1,0 +1,9 @@
+[Unit]
+Description=Auto-fix sg-awg-panel cascade rules
+After=network-online.target
+# Запускать только если настроен каскадный выход (файл sgo1.conf существует)
+ConditionPathExists=/etc/amnezia/amneziawg/outbounds/sgo1.conf
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/sg-cascade-fix.sh
