@@ -1,3 +1,4 @@
 Flask>=3.0,<4
 waitress>=3,<4
 qrcode>=7.4,<9
+ua-extract
