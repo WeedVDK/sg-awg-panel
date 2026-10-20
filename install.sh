@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-RELEASE_VERSION="v0.7.0-RC6"
+RELEASE_VERSION="v0.8.0"
 REPOSITORY="WeedVDK/sg-awg-panel"
 PASSWORD_MIN_LENGTH=8
 PUBLIC_PORT_DEFAULT=62443
