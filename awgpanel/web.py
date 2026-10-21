@@ -94,7 +94,8 @@ from .core import (
     validate_web_session,
     check_for_updates,
     ip_is_allowed,
-)
+    get_client_traffic_history,
+    get_client_period_stats)
 from .db import init_db
 from .geography import (
     country_display, country_flag, country_flag_asset, country_name,
@@ -1137,9 +1138,7 @@ def create_app() -> Flask:
             if int(item["id"]) == int(client_id):
                 enriched.update(item)
                 break
-        return render_template(
-            "client_edit.html", client=enriched, settings=get_awg_settings()
-        )
+        return render_template("client_edit.html", client=enriched, settings=get_awg_settings(), client_traffic_history=get_client_traffic_history(client['id']), client_stats=get_client_period_stats(client['id']))
 
     @app.route("/clients/<int:client_id>/json", methods=["GET", "POST"])
     @login_required

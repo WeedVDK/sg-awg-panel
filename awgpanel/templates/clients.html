@@ -23,8 +23,15 @@
   </article>
   <article class="beta9-summary-card">
     <span>Общий трафик</span>
-    <strong><span class="traffic-rx">↓ {{ awg.total_rx_text }}</span><br><span class="traffic-tx">↑ {{ awg.total_tx_text }}</span></strong>
-    <small>Controller и SG-Node</small>
+    <strong style="font-size: 1.3rem; line-height: 1.2; margin-bottom: 8px; display: block;">
+        <span class="traffic-rx">↓ {{ awg.total_rx_text }}</span><br>
+        <span class="traffic-tx">↑ {{ awg.total_tx_text }}</span>
+    </strong>
+    <div style="font-size: 0.7rem; line-height: 1.5; opacity: 0.8; border-top: 1px solid rgba(128,128,128,0.2); padding-top: 6px;">
+        <div style="display: flex; justify-content: space-between;"><span>Сутки:</span> <span>↓ {{ awg.total_daily_rx_text }} / ↑ {{ awg.total_daily_tx_text }}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Неделя:</span> <span>↓ {{ awg.total_week_rx_text }} / ↑ {{ awg.total_week_tx_text }}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>Месяц:</span> <span>↓ {{ awg.total_month_rx_text }} / ↑ {{ awg.total_month_tx_text }}</span></div>
+    </div>
   </article>
   <a class="beta9-summary-card" href="{{ url_for('traffic_rules_page') }}">
     <span>Network Controller</span>
@@ -33,6 +40,69 @@
     <span class="summary-link">Открыть Network →</span>
   </a>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const canvas = document.getElementById('globalTrafficChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Берем данные из шаблона Jinja2
+    const labels = {{ awg.graph_labels_json | safe }};
+    const dataRx = {{ awg.graph_rx_json | safe }};
+    const dataTx = {{ awg.graph_tx_json | safe }};
+
+    // Если данных нет, создаем пустые массивы, чтобы график не падал с ошибкой
+    if (labels.length === 0) {
+        canvas.parentElement.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:gray;">Нет данных за последние 30 дней</div>';
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'RX (Скачано)',
+                    data: dataRx,
+                    borderColor: '#36a2eb',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'TX (Отдано)',
+                    data: dataTx,
+                    borderColor: '#ff6384',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { labels: { color: '#a0aab8' } } 
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true, 
+                    grid: { color: 'rgba(128,128,128,0.1)' }, 
+                    ticks: { color: '#a0aab8' } 
+                },
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { color: '#a0aab8' } 
+                }
+            }
+        }
+    });
+});
+</script>
 
 <section class="beta9-panel clients-filter-toolbar">
   <form method="get">

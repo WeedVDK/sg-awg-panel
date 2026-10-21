@@ -31,8 +31,24 @@
       <article><span>Сервер</span><strong>{{ country_flag_icon(client.server_country_code, client.server_country_name) }} {{ client.server_name }}</strong><small>{{ client.server_address }}:{{ 585 if client.node_id else settings.listen_port }}</small></article>
       <article><span>Адрес</span><strong><code>{{ client.address }}</code></strong></article>
       <article><span>Handshake</span><strong>{{ client.latest_handshake_text or '—' }}</strong></article>
-      <article><span>Получено</span><strong>{{ client.rx_text or '0 B' }}</strong></article>
-      <article><span>Передано</span><strong>{{ client.tx_text or '0 B' }}</strong></article>
+      <article style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
+        <span>Получено</span>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 0.8rem; margin-top: 8px; width: 100%;">
+          <span style="opacity: 0.6;">Сутки:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.day_rx_text if client_stats else '0 B' }}</span>
+          <span style="opacity: 0.6;">Неделя:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.week_rx_text if client_stats else '0 B' }}</span>
+          <span style="opacity: 0.6;">Месяц:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.month_rx_text if client_stats else '0 B' }}</span>
+          <span style="opacity: 0.6;">Всего:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.all_rx_text if client_stats else '0 B' }}</span>
+        </div>
+      </article>
+      <article style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
+        <span>Передано</span>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 0.8rem; margin-top: 8px; width: 100%;">
+          <span style="opacity: 0.6;">Сутки:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.day_tx_text if client_stats else '0 B' }}</span>
+          <span style="opacity: 0.6;">Неделя:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.week_tx_text if client_stats else '0 B' }}</span>
+          <span style="opacity: 0.6;">Месяц:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.month_tx_text if client_stats else '0 B' }}</span>
+          <span style="opacity: 0.6;">Всего:</span> <span style="font-weight: 600; text-align: right;">{{ client_stats.all_tx_text if client_stats else '0 B' }}</span>
+        </div>
+      </article>
       <article><span>Маршрут</span><strong>{{ client.egress_mode|capitalize }}</strong></article>
       <article class="{{ 'warning' if client.expiring_soon and not client.expired else 'danger' if client.expired else '' }}"><span>Срок</span><strong>{{ client.expires_at_text }}</strong></article>
     </div>

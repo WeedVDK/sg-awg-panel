@@ -3223,6 +3223,72 @@ def get_awg_diagnostics() -> dict[str, object]:
     }
 
 
+
+def get_client_period_stats(client_id: int) -> dict[str, str]:
+    """Возвращает статистику трафика клиента за день, неделю, месяц и всё время."""
+    import datetime
+    now = datetime.datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    week_str = (now - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+    month_str = (now - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+
+    stats = {
+        "day_rx": 0, "day_tx": 0, "week_rx": 0, "week_tx": 0,
+        "month_rx": 0, "month_tx": 0, "all_rx": 0, "all_tx": 0
+    }
+    try:
+        with connect() as con:
+            row = con.execute("SELECT SUM(rx_bytes), SUM(tx_bytes) FROM awg_traffic_history WHERE client_id = ? AND date_str = ?", (client_id, today_str)).fetchone()
+            if row and row[0]: stats["day_rx"], stats["day_tx"] = row[0], row[1]
+            row = con.execute("SELECT SUM(rx_bytes), SUM(tx_bytes) FROM awg_traffic_history WHERE client_id = ? AND date_str >= ?", (client_id, week_str)).fetchone()
+            if row and row[0]: stats["week_rx"], stats["week_tx"] = row[0], row[1]
+            row = con.execute("SELECT SUM(rx_bytes), SUM(tx_bytes) FROM awg_traffic_history WHERE client_id = ? AND date_str >= ?", (client_id, month_str)).fetchone()
+            if row and row[0]: stats["month_rx"], stats["month_tx"] = row[0], row[1]
+            row = con.execute("SELECT SUM(rx_bytes), SUM(tx_bytes) FROM awg_traffic_history WHERE client_id = ?", (client_id,)).fetchone()
+            if row and row[0]: stats["all_rx"], stats["all_tx"] = row[0], row[1]
+    except Exception:
+        pass
+
+    return {
+        "day_rx_text": _format_bytes(stats["day_rx"]),
+        "day_tx_text": _format_bytes(stats["day_tx"]),
+        "week_rx_text": _format_bytes(stats["week_rx"]),
+        "week_tx_text": _format_bytes(stats["week_tx"]),
+        "month_rx_text": _format_bytes(stats["month_rx"]),
+        "month_tx_text": _format_bytes(stats["month_tx"]),
+        "all_rx_text": _format_bytes(stats["all_rx"]),
+        "all_tx_text": _format_bytes(stats["all_tx"]),
+    }
+
+def get_client_traffic_history(client_id: int, days: int = 30) -> dict[str, str]:
+    """Возвращает историю трафика для конкретного клиента для графиков."""
+    import datetime
+    import json
+    now = datetime.datetime.now()
+    date_from = (now - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+    
+    labels = []
+    rx = []
+    tx = []
+    try:
+        with connect() as con:
+            rows = con.execute(
+                "SELECT date_str, rx_bytes, tx_bytes FROM awg_traffic_history WHERE client_id = ? AND date_str >= ? ORDER BY date_str ASC", 
+                (client_id, date_from)
+            ).fetchall()
+            for r in rows:
+                labels.append(r[0])
+                rx.append(r[1])
+                tx.append(r[2])
+    except Exception:
+        pass
+        
+    return {
+        "labels": json.dumps(labels),
+        "rx": json.dumps(rx),
+        "tx": json.dumps(tx)
+    }
+
 def get_awg_overview() -> dict[str, object]:
     settings = get_awg_settings()
     installed = bool(_command_path("awg") and _command_path("awg-quick"))
@@ -3237,12 +3303,34 @@ def get_awg_overview() -> dict[str, object]:
     }
     local_node = next((node for node in known_nodes if node.get("is_local")), {})
     import datetime
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    import json
+    now = datetime.datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    week_str = (now - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+    month_str = (now - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+    
     daily_traffic = {}
+    global_stats = {"day": (0, 0), "week": (0, 0), "month": (0, 0)}
+    graph_data = {"labels": [], "rx": [], "tx": []}
+    
     try:
         with connect() as con:
+            # Данные для таблицы клиентов (за сегодня)
             for trow in con.execute("SELECT client_id, rx_bytes, tx_bytes FROM awg_traffic_history WHERE date_str = ?", (today_str,)).fetchall():
                 daily_traffic[trow[0]] = (trow[1], trow[2])
+                
+            # Общие суммы за день/неделю/месяц
+            for period, date_from in [("day", today_str), ("week", week_str), ("month", month_str)]:
+                row = con.execute("SELECT SUM(rx_bytes), SUM(tx_bytes) FROM awg_traffic_history WHERE date_str >= ?", (date_from,)).fetchone()
+                if row and row[0]:
+                    global_stats[period] = (row[0], row[1])
+                    
+            # Данные для графика (последние 30 дней)
+            rows = con.execute("SELECT date_str, SUM(rx_bytes), SUM(tx_bytes) FROM awg_traffic_history WHERE date_str >= ? GROUP BY date_str ORDER BY date_str ASC", (month_str,)).fetchall()
+            for r in rows:
+                graph_data["labels"].append(r[0])
+                graph_data["rx"].append(r[1])
+                graph_data["tx"].append(r[2])
     except Exception:
         pass
 
@@ -3324,6 +3412,13 @@ def get_awg_overview() -> dict[str, object]:
         "total_tx": total_tx,
         "total_rx_text": _format_bytes(total_rx),
         "total_daily_rx_text": _format_bytes(sum(v[0] for v in daily_traffic.values())),
+        "total_week_rx_text": _format_bytes(global_stats["week"][0]),
+        "total_week_tx_text": _format_bytes(global_stats["week"][1]),
+        "total_month_rx_text": _format_bytes(global_stats["month"][0]),
+        "total_month_tx_text": _format_bytes(global_stats["month"][1]),
+        "graph_labels_json": json.dumps(graph_data["labels"]),
+        "graph_rx_json": json.dumps(graph_data["rx"]),
+        "graph_tx_json": json.dumps(graph_data["tx"]),
         "total_daily_tx_text": _format_bytes(sum(v[1] for v in daily_traffic.values())),
         "total_tx_text": _format_bytes(total_tx),
         "active_clients": active_clients,
