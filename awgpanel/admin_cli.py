@@ -457,8 +457,6 @@ def command_myfakesite(_args: argparse.Namespace) -> int:
         sys.stderr.write(result.stderr)
 
     if result.returncode == 0:
-        print(f"\n{C.green}OK{C.reset} MyFakeSite успешно установлен!")
-        print("Сканеры теперь будут видеть фейковое облако MySphere.")
         return 0
     else:
         raise RuntimeError(f"Ошибка при установке MyFakeSite (код выхода {result.returncode})")
