@@ -3,7 +3,7 @@
 Ничего скачивать и распаковывать не требуется. Полный uninstall предназначен для отдельного сервера, где AmneziaWG, Nginx и Certbot не обслуживают другие проекты.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/main/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/uninstall.sh | sudo bash
 ```
 
 Команда запросит безопасное подтверждение:
@@ -15,7 +15,7 @@ DELETE SG-AWG-PANEL COMPLETELY
 Для автоматического удаления без вопроса подтверждения (только для отдельного тестового EC2):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/main/uninstall.sh | sudo bash -s -- --yes
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/uninstall.sh | sudo bash -s -- --yes
 ```
 
 После завершения:
@@ -31,7 +31,7 @@ sudo reboot
 Read-only аудит:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/main/verify-uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/verify-uninstall.sh | sudo bash
 ```
 
 Аудит не удаляет файлы и не заменяет uninstall.

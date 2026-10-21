@@ -6,7 +6,7 @@ TAG = "main"
 
 
 def test_github_one_command_uninstall_is_documented():
-    expected = f"curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/{TAG}/uninstall.sh | sudo bash"
+    expected = f"curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/{TAG}/uninstall.sh | sudo bash"
     for relative in ("README.md", "docs/UNINSTALL.md", "docs/USER-GUIDE.md"):
         assert expected in (ROOT / relative).read_text(encoding="utf-8")
 

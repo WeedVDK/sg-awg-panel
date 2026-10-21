@@ -182,7 +182,7 @@ def test_only_install_sh_is_public_clean_installer():
     assert (ROOT / "install.sh").exists()
     assert not (ROOT / "install-from-github.sh").exists()
     installation = (ROOT / "docs" / "INSTALLATION.md").read_text(encoding="utf-8")
-    assert "raw.githubusercontent.com/s-gor/sg-awg-panel/main/install.sh" in installation
+    assert "raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/install.sh" in installation
     assert "-o /tmp/install-sg-awg-panel.sh" in installation
     assert "sudo bash /tmp/install-sg-awg-panel.sh" in installation
     assert "/install.sh | sudo bash" not in installation

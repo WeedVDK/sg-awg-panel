@@ -119,7 +119,7 @@ sudo sg-awg-panel uninstall
 или:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/v0.7.0-RC4/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/v0.7.0-RC4/uninstall.sh | sudo bash
 ```
 
 ## Рекомендуемый live-тест перед публикацией

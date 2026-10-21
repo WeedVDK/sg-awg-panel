@@ -15,7 +15,7 @@
 Используйте обычную SSH-сессию: установщик безопасно читает имя сервера, пароль и порт через `/dev/tty`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/install.sh \
   -o /tmp/install-sg-awg-panel.sh
 sudo bash /tmp/install-sg-awg-panel.sh
 ```

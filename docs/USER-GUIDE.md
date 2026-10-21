@@ -114,7 +114,7 @@ JSON-редакторы предназначены для опытных пол�
 ## Удаление
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/s-gor/sg-awg-panel/main/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/WeedVDK/sg-awg-panel/main/uninstall.sh | sudo bash
 ```
 
 Для запуска удаления введите:
