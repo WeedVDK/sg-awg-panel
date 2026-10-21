@@ -413,13 +413,6 @@ def _session_cookie_name(secret_key: str) -> str:
 def create_app() -> Flask:
     app = Flask(__name__)
 
-@app.errorhandler(ValueError)
-def handle_value_error(error):
-    from flask import flash, redirect, url_for, request
-    if "SG-Node" in str(error):
-        flash(str(error), "error")
-        return redirect(request.referrer or url_for('index'))
-    raise error
     secret_key = os.environ.get("AWGPANEL_SECRET_KEY", "").strip()
     if not secret_key:
         raise RuntimeError(
@@ -3873,3 +3866,11 @@ def handle_value_error(error):
 
 
 app = create_app()
+
+@app.errorhandler(ValueError)
+def handle_value_error(error):
+    from flask import flash, redirect, url_for, request
+    if "SG-Node" in str(error):
+        flash(str(error), "error")
+        return redirect(request.referrer or url_for('index'))
+    raise error
