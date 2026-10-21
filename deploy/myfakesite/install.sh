@@ -2,7 +2,6 @@
 set -Eeuo pipefail
 
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 RED='\033[0;31m'
 CYAN='\033[1;36m'
 NC='\033[0m'
@@ -17,7 +16,9 @@ run_step() {
     local name=$3
     local cmd=$4
 
-    printf "[ %3d%% ] %-60s\r" "$start" "$name"
+    # Печатаем первую строку и оставляем курсор на ней
+    printf "[ %3d%% ] %s\n" "$start" "$name"
+
     eval "$cmd" > /tmp/myfakesite_task.log 2>&1 &
     local pid=$!
     local p=$start
@@ -25,7 +26,8 @@ run_step() {
     while kill -0 $pid 2>/dev/null; do
         if [ $p -lt $end ]; then
             p=$((p + 1))
-            printf "[ %3d%% ] %-60s\r" "$p" "$name"
+            # Поднимаем курсор на 1 строку вверх, очищаем её и печатаем новые проценты
+            printf "\033[1A\033[2K[ %3d%% ] %s\n" "$p" "$name"
         fi
         sleep 0.1
     done
@@ -34,9 +36,10 @@ run_step() {
     local exit_code=$?
 
     if [ $exit_code -eq 0 ]; then
-        printf "[ %3d%% ] %-60s ${GREEN}[ ✓ ]${NC}\n" "$end" "$name"
+        # Поднимаем курсор, очищаем, ставим финальные проценты и галочку
+        printf "\033[1A\033[2K[ %3d%% ] %s ${GREEN}[ ✓ ]${NC}\n" "$end" "$name"
     else
-        printf "[ FAIL ] %-60s ${RED}[ ✗ ]${NC}\n" "$name"
+        printf "\033[1A\033[2K[ FAIL ] %s ${RED}[ ✗ ]${NC}\n" "$name"
         echo -e "${RED}Лог ошибки:${NC}"
         tail -n 15 /tmp/myfakesite_task.log
         exit 1
@@ -45,7 +48,7 @@ run_step() {
 
 echo -e "${CYAN}--- Установка защиты MyFakeSite ---${NC}"
 
-echo -ne "[   0% ] Проверка домена и сертификатов...\r"
+echo -ne "[   0% ] Проверка домена и сертификатов...\n"
 sleep 0.5
 if [[ -n "$DOMAIN" ]]; then
     if [[ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]]; then
@@ -63,7 +66,7 @@ else
     CERT_PATH="/etc/nginx/ssl"
     SERVER_NAME="_"
 fi
-printf "[   5%% ] %-60s ${GREEN}[ ✓ ]${NC}\n" "Проверка домена и сертификатов"
+printf "\033[1A\033[2K[   5%% ] %s ${GREEN}[ ✓ ]${NC}\n" "Проверка домена и сертификатов"
 
 run_step 5 25 "Проверка и установка Docker (без ubuntu-fan)" '
     if ! command -v docker >/dev/null 2>&1; then
@@ -100,7 +103,7 @@ run_step 45 85 "Запуск контейнеров MyFakeSite (скачиван
     docker compose up -d
 '
 
-echo -ne "[  85% ] Настройка Nginx (проксирование)...\r"
+echo -ne "[  85% ] Настройка Nginx (проксирование)...\n"
 sleep 0.5
 if [[ -n "$DOMAIN" ]]; then
     SSL_CERT="$CERT_PATH/fullchain.pem"
@@ -143,17 +146,16 @@ NGINX
 rm -f /etc/nginx/sites-enabled/sg-awg-placeholder.conf*
 rm -f /etc/nginx/sites-enabled/default
 ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
-printf "[  90%% ] %-60s ${GREEN}[ ✓ ]${NC}\n" "Настройка Nginx (проксирование)"
+printf "\033[1A\033[2K[  90%% ] %s ${GREEN}[ ✓ ]${NC}\n" "Настройка Nginx (проксирование)"
 
-echo -ne "[  90% ] Проверка конфигурации Nginx и перезагрузка...\r"
-if ! nginx -t > /tmp/nginx_test.log 2>&1; then
-    echo -e "\n${RED}ОШИБКА Nginx! Конфигурация не прошла проверку:${NC}"
+echo -ne "[  90% ] Проверка конфигурации Nginx...\n"
+if ! nginx -t >/tmp/nginx_test.log 2>&1; then
+    echo -e "${RED}ОШИБКА Nginx!${NC}"
     cat /tmp/nginx_test.log
     exit 1
 fi
 systemctl reload nginx
-printf "[  99%% ] %-60s ${GREEN}[ ✓ ]${NC}\n" "Проверка конфигурации Nginx и перезагрузка"
-
+printf "\033[1A\033[2K[  99%% ] %s ${GREEN}[ ✓ ]${NC}\n" "Проверка конфигурации Nginx"
 
 echo -e "\n${GREEN}=========================================${NC}"
 echo -e "${GREEN}[ 100%] ✅ MyFakeSite успешно установлен!${NC}"
