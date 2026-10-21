@@ -23,3 +23,10 @@ systemctl enable --now mss-clamping.service
 systemctl enable --now sg-cascade-fix.timer
 
 echo "==> System fixes installed and enabled."
+
+# 4. Enable traffic tracker (new feature)
+if [ -f /etc/systemd/system/sg-awg-traffic-tracker.timer ]; then
+    systemctl daemon-reload
+    systemctl enable --now sg-awg-traffic-tracker.timer
+    echo "==> Traffic tracker timer enabled."
+fi
