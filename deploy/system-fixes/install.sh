@@ -3,16 +3,21 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "==> Installing system-level fixes (MSS Clamping & Cascade Auto-fix)..."
+echo "==> Installing system-level fixes (dnsmasq, MSS clamping, cascade)..."
 
-# Копируем скрипты и юниты
+# 1. Fix dnsmasq
+if [ -f "$SCRIPT_DIR/dnsmasq-fix.sh" ]; then
+    bash "$SCRIPT_DIR/dnsmasq-fix.sh"
+fi
+
+# 2. Copy scripts and units
 cp "$SCRIPT_DIR"/*.sh /usr/local/sbin/
 cp "$SCRIPT_DIR"/*.service /etc/systemd/system/
 cp "$SCRIPT_DIR"/*.timer /etc/systemd/system/ 2>/dev/null || true
 
 chmod +x /usr/local/sbin/mss-clamping.sh /usr/local/sbin/sg-cascade-fix.sh
 
-# Включаем службы
+# 3. Enable services
 systemctl daemon-reload
 systemctl enable --now mss-clamping.service
 systemctl enable --now sg-cascade-fix.timer

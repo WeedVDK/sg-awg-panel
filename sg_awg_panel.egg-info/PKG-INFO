@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sg-awg-panel
-Version: 0.7.0rc6
+Version: 0.7.0rc7
 Summary: Lightweight native web panel for AmneziaWG 2.0
 Requires-Python: >=3.10
 Requires-Dist: Flask<4,>=3.0
