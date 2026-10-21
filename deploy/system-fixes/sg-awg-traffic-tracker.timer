@@ -1,0 +1,11 @@
+[Unit]
+Description=Run SG-AWG Traffic Tracker every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=1s
+Unit=sg-awg-traffic-tracker.service
+
+[Install]
+WantedBy=timers.target

@@ -2961,14 +2961,19 @@ def get_system_resources() -> dict[str, object]:
     return _system_resources()
 
 
-def _format_bytes(value: int) -> str:
-    size = float(max(0, value))
-    units = ("B", "KiB", "MiB", "GiB", "TiB")
-    for unit in units:
-        if size < 1024 or unit == units[-1]:
-            return f"{size:.0f} {unit}" if unit in {"B", "KiB"} else f"{size:.1f} {unit}"
-        size /= 1024
-    return f"{value} B"
+def _format_bytes(size: int) -> str:
+    if size <= 0:
+        return "0 KB"
+    power = 1024.0
+    n = 0
+    units = ["KB", "MB", "GB", "TB"]
+    size = float(size) / power
+    while size >= power and n < len(units) - 1:
+        size /= power
+        n += 1
+    if n == 0:
+        return f"{int(size)} KB"
+    return f"{size:.1f} {units[n]}"
 
 
 def _service_main_pid(service: str) -> int:
@@ -3231,6 +3236,16 @@ def get_awg_overview() -> dict[str, object]:
         int(node["id"]): node for node in known_nodes if not node.get("is_local")
     }
     local_node = next((node for node in known_nodes if node.get("is_local")), {})
+    import datetime
+    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    daily_traffic = {}
+    try:
+        with connect() as con:
+            for trow in con.execute("SELECT client_id, rx_bytes, tx_bytes FROM awg_traffic_history WHERE date_str = ?", (today_str,)).fetchall():
+                daily_traffic[trow[0]] = (trow[1], trow[2])
+    except Exception:
+        pass
+
     for row in list_awg_clients():
         if str(row["system_role"] or "").strip():
             continue
@@ -3276,6 +3291,14 @@ def get_awg_overview() -> dict[str, object]:
         item["latest_handshake_text"] = _format_handshake(int(item["latest_handshake"]))
         item["rx_text"] = _format_bytes(int(item["rx"]))
         item["tx_text"] = _format_bytes(int(item["tx"]))
+        
+        # Суточный трафик
+        client_id_int = int(item["id"])
+        d_rx, d_tx = daily_traffic.get(client_id_int, (0, 0))
+        item["daily_rx"] = d_rx
+        item["daily_tx"] = d_tx
+        item["daily_rx_text"] = _format_bytes(d_rx)
+        item["daily_tx_text"] = _format_bytes(d_tx)
         clients.append(item)
     panel_pid = _service_main_pid("sg-awg-panel")
     panel_rss = _process_rss(panel_pid)
@@ -3300,6 +3323,8 @@ def get_awg_overview() -> dict[str, object]:
         "total_rx": total_rx,
         "total_tx": total_tx,
         "total_rx_text": _format_bytes(total_rx),
+        "total_daily_rx_text": _format_bytes(sum(v[0] for v in daily_traffic.values())),
+        "total_daily_tx_text": _format_bytes(sum(v[1] for v in daily_traffic.values())),
         "total_tx_text": _format_bytes(total_tx),
         "active_clients": active_clients,
         "latest_backup": backups[0] if backups else None,

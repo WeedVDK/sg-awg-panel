@@ -1,0 +1,9 @@
+[Unit]
+Description=SG-AWG Traffic Tracker
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/sg-awg-panel
+EnvironmentFile=/etc/sg-awg-panel/web.env
+ExecStart=/opt/sg-awg-panel/.venv/bin/python -m awgpanel.traffic_tracker

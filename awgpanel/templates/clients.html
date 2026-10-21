@@ -93,7 +93,9 @@
                 {% else %}<span class="status-badge">Отключён</span>{% endif %}
               </td>
               <td>{% if client.egress_mode == 'outbound' %}<span class="client-route-chip cascade">{{ outbound_names.get(client.outbound_id|int, 'Cascade') }}</span>{% else %}<span class="client-route-chip direct">Direct</span>{% endif %}</td>
-              <td class="client-traffic-cell"><span class="traffic-rx">↓ {{ client.rx_text }}</span><span class="traffic-tx">↑ {{ client.tx_text }}</span></td>
+              <td class="client-traffic-cell"><span class="traffic-rx"><div title="Текущая сессия: ↓ {{ client.rx_text }} / ↑ {{ client.tx_text }}" style="cursor: help;">
+    ↓ {{ client.daily_rx_text }} <br> ↑ {{ client.daily_tx_text }}
+</div></span></td>
               <td class="right client-actions-cell" onclick="event.stopPropagation()"><div class="beta9-row-actions">
                 {% if client.effective_enabled and client.deployment_ready %}<a class="beta9-compact-action primary" title="Конфигурация клиента" href="{{ url_for('client_access', client_id=client.id) }}">Конфиг</a>{% endif %}
                 <details class="client-more-menu">
