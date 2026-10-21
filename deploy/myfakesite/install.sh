@@ -145,10 +145,15 @@ rm -f /etc/nginx/sites-enabled/default
 ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 printf "[  90%% ] %-60s ${GREEN}[ ✓ ]${NC}\n" "Настройка Nginx (проксирование)"
 
-run_step 90 99 "Проверка конфигурации Nginx и перезагрузка" '
-    nginx -t > /dev/null 2>&1
-    systemctl reload nginx
-'
+echo -ne "[  90% ] Проверка конфигурации Nginx и перезагрузка...\r"
+if ! nginx -t > /tmp/nginx_test.log 2>&1; then
+    echo -e "\n${RED}ОШИБКА Nginx! Конфигурация не прошла проверку:${NC}"
+    cat /tmp/nginx_test.log
+    exit 1
+fi
+systemctl reload nginx
+printf "[  99%% ] %-60s ${GREEN}[ ✓ ]${NC}\n" "Проверка конфигурации Nginx и перезагрузка"
+
 
 echo -e "\n${GREEN}=========================================${NC}"
 echo -e "${GREEN}[ 100%] ✅ MyFakeSite успешно установлен!${NC}"
